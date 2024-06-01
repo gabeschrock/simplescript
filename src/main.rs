@@ -11,9 +11,16 @@ fn main() {
             process::exit(71);
         });
 
+    /*
     let (length, string) = lexer.read().unwrap();
-
+    
     println!("bytes read: {}", length);
     
     println!("{string}");
+    */
+
+    let tokens = lexer.lex().unwrap();
+    for token in tokens {
+        println!("{token:?}")
+    }
 }

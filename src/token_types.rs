@@ -1,9 +1,10 @@
 pub struct Token {
     pub token_enum: TokenEnum,
-    pub line: f32,
-    pub col: f32,
+    // pub line: f32,
+    // pub col: f32,
 }
 
+#[derive(Debug)]
 pub enum TokenEnum {
     Ident(String),
     Keyword(Keyword),
@@ -13,6 +14,7 @@ pub enum TokenEnum {
     NumLiteral(f64),
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Keyword {
     None,
     If,
@@ -25,6 +27,7 @@ pub enum Keyword {
     Return,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Punctuator {
     None,
     LParen,
@@ -34,9 +37,11 @@ pub enum Punctuator {
     LBrace,
     RBrace,
     Semicolon,
+    Comma,
     EOF,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Operator {
     None,
     Plus,
@@ -66,15 +71,13 @@ pub const MAX_PUNCTUATOR_LEN: usize = 1;
 pub const MAX_OPERATOR_LEN: usize = 2;
 
 impl TokenEnum {
-    pub fn is_varname_char(c: char) -> bool {
-           ('a' <= c && c <= 'z')
-        || ('A' <= c && c <= 'Z')
-        || (c == '$' || c == '_')
+    pub fn is_ident_char(c: char) -> bool {
+        c.is_alphanumeric() || c == '$' || c == '_'
     }
 
-    pub fn is_varname(token: &str) -> bool {
+    pub fn is_ident(token: &str) -> bool {
         for c in token.chars() {
-            if !TokenEnum::is_varname_char(c) {
+            if !TokenEnum::is_ident_char(c) {
                 return false;
             }
         }
@@ -130,9 +133,9 @@ impl From<String> for Keyword {
     }
 }
 
-impl From<String> for Punctuator {
-    fn from(value: String) -> Punctuator {
-        return match value.as_str() {
+impl<T: ToString> From<T> for Punctuator {
+    fn from(value: T) -> Punctuator {
+        return match value.to_string().as_str() {
             "(" => Punctuator::LParen,
             ")" => Punctuator::RParen,
             "[" => Punctuator::LBracket,
@@ -140,6 +143,7 @@ impl From<String> for Punctuator {
             "{" => Punctuator::LBrace,
             "}" => Punctuator::RBrace,
             ";" => Punctuator::Semicolon,
+            "," => Punctuator::Comma,
             _ => Punctuator::None,
         }
     }
