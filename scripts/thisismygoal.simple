@@ -18,7 +18,7 @@ function fizzBuzz(num: number) {
     if (!mod5) {
         return buzz;
     }
-    return "";
+    return num;
 }
 
 for(let i = 1; i <= 50; i++) {

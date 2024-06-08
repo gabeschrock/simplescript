@@ -1,4 +1,5 @@
 use crate::token_types::*;
+use std::cmp::max;
 use std::error::Error;
 use std::str;
 
@@ -7,16 +8,16 @@ use std::{
     io::{self, BufRead, BufReader, Read}
 };
 
-pub struct Lexer<T: ?Sized + Read> {
+pub struct Lexer<T: Sized + Read> {
     reader: BufReader<T>
 }
 
 const BUF_SIZE: usize = 1024;
 
 impl<T: Sized + Read> Lexer<T> {
-    pub fn new(readable: T) -> Lexer<T> {
+    pub fn new(reader: T) -> Lexer<T> {
         Lexer {
-            reader: BufReader::with_capacity(BUF_SIZE, readable)
+            reader: BufReader::new(reader)
         }
     }
 
@@ -30,79 +31,96 @@ impl<T: Sized + Read> Lexer<T> {
     pub fn lex(&mut self) -> Result<Vec<TokenEnum>, Box<dyn Error>> {
         let mut tokens: Vec<TokenEnum> = vec![];
 
-        #[derive(Debug, PartialEq)]
-        enum TokenType {
-            None,
-            Ident,
-            Other,
-        }
-
         let (_, string) = self.read()?;
         let len = string.len();
+        let width = len.to_string().len();
 
         let mut substr_start = 0;
         let mut substr = &string[0..0];
-        let mut token_type = TokenType::None;
 
-        let mut index: usize = 0;
+        let mut index = 0;
+
+        println!("code: {string:?}");
+
+
         while index < len {
-            let mut inc = true;
             let char = string[index..index+1].chars().next().unwrap();
+            println!("main:   index {index:width$} of {len}: {char:?}");
             if char.is_whitespace() {
-                
+                index += 1;
+
+                if substr.len() > 0 {
+                    tokens.push(TokenEnum::from(substr));
+                }
+
+                substr_start = index;
+                substr = &string[substr_start..substr_start];
+                continue;
             }
-            let is_ident = TokenEnum::is_ident_char(char);
-            match token_type {
-                TokenType::Ident => {
-                    if is_ident {
-                        substr = &string[substr_start..index+1];
-                    } else {
+
+            if TokenEnum::is_ident_char(char) {
+                while index < len {
+                    println!("ident:  index {index:width$} of {len}: {substr:?}");
+
+                    substr = &string[substr_start..index];
+
+                    let char = string[index..index+1].chars().next().unwrap();
+                    if char.is_whitespace() {
+                        println!("ident:  end   {index:width$} of {len}: {substr:?}");
                         tokens.push(TokenEnum::from(substr));
                         substr_start = index;
-                        substr = &string[index..index];
-                        token_type = TokenType::None;
-                        inc = false;
+                        substr = &string[substr_start..substr_start];
+                        break;
                     }
-                }
-                TokenType::Other => {
-                    if is_ident || substr.len() >= MAX_PUNCTUATOR_LEN {
-                        let punct = Punctuator::from(substr);
-                        if punct != Punctuator::None {
-                            tokens.push(TokenEnum::from(punct));
-                        }
-                        substr_start = index;
-                        substr = &string[index..index];
-                        token_type = TokenType::None;
-                        inc = false;
-                    } else if char.is_whitespace() {
-                        substr_start = index + 1;
-                        substr = &string[index+1..index+1];
-                        token_type = TokenType::None;
-                        inc = false;
-                        if char.is_whitespace() {
-                            inc = true;
-                        }
+                    
+                    if !TokenEnum::is_ident_char(char) {
+                        println!("ident:  end   {index:width$} of {len}: {substr:?}");
+                        tokens.push(TokenEnum::from(substr));
+                        break;
                     }
-                    else {
-                        substr = &string[substr_start..index+1];
-                    }
-                }
-                TokenType::None => {
-                    token_type = match is_ident {
-                        true  => TokenType::Ident,
-                        false => TokenType::Other,
-                    };
-                    inc = false;
-                }
-            }
-            // println!("at index {index:4} {char:?} {is_ident:5} {substr:?} {token_type:?}");
 
-            if inc { index += 1; }
-        }
-        match token_type {
-            TokenType::Ident => { tokens.push(TokenEnum::from(substr)) }
-            TokenType::Other => { tokens.push(TokenEnum::from(Punctuator::from(substr))) }
-            TokenType::None => ()
+                    index += 1;
+                }
+                continue;
+            }
+
+            substr_start = index;
+            substr = &string[substr_start..substr_start];
+
+            while index < len {
+                println!("symbol: index {index:width$} of {len}: {substr:?}");
+
+                let max_len = max(MAX_PUNCTUATOR_LEN, MAX_OPERATOR_LEN);
+                substr = &string[substr_start..index];
+
+                let char = string[index..index+1].chars().next().unwrap();
+                if char.is_whitespace() {
+                    println!("symbol: endw  {index:width$} of {len}: {substr:?}");
+                    tokens.push(TokenEnum::from(substr));
+                    substr_start = index;
+                    substr = &string[substr_start..substr_start];
+                    break;
+                }
+
+                /* 
+                if substr.len() < max_len {
+                    tokens.push(TokenEnum::from(substr));
+                    substr_start = index;
+                    substr = &string[substr_start..substr_start];
+                    break;
+                }
+                */
+                
+                if TokenEnum::is_ident_char(char) {
+                    println!("symbol: end   {index:width$} of {len}: {substr:?}");
+                    tokens.push(TokenEnum::from(substr));
+                    substr_start = index;
+                    substr = &string[substr_start..substr_start];
+                    break;
+                }
+
+                index += 1;
+            }
         }
         Ok(tokens)
     }

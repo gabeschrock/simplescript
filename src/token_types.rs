@@ -76,10 +76,15 @@ impl TokenEnum {
     }
 
     pub fn is_ident(token: &str) -> bool {
+        let mut is_first = true;
         for c in token.chars() {
+            if is_first && c.is_numeric() {
+                return false;
+            }
             if !TokenEnum::is_ident_char(c) {
                 return false;
             }
+            is_first = false;
         }
         return true;
     }
