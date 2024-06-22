@@ -1,7 +1,6 @@
 use crate::token_types::*;
-use std::cmp::max;
-use std::error::Error;
-use std::str;
+use std::vec;
+use std::{str, error::Error};
 
 use std::{
     fs::File,
@@ -28,14 +27,66 @@ impl<T: Sized + Read> Lexer<T> {
         Ok((len, string))
     }
 
-    pub fn lex(&mut self) -> Result<Vec<TokenEnum>, Box<dyn Error>> {
-        let mut tokens: Vec<TokenEnum> = vec![];
+    pub fn lex(&mut self) -> Result<Vec<Token>, Box<dyn Error>> {
+        const fn max(a: usize, b: usize) -> usize {
+            return match a >= b {
+                true => a,
+                false => b,
+            };
+        }
+        const fn min(a: usize, b: usize) -> usize {
+            return match a <= b {
+                true => a,
+                false => b,
+            };
+        }
+        fn split_symbols(string: &str) -> Vec<Token> {
+            const MAX_LEN: usize = max(MAX_OPERATOR_LEN, MAX_PUNCTUATOR_LEN);
+
+            if string.len() == 0 {
+                return vec![];
+            }
+            let mut tokens = vec![];
+            let mut indices = (0, min(string.len(), MAX_LEN));
+
+
+            while indices.1 != indices.0 {
+                println!("indices: ({}, {})", indices.0, indices.1);
+                let substr = &string[indices.0..indices.1];
+                println!("substr ({}..{}): {substr}", indices.0, indices.1);
+
+                let punct = Punctuator::from(substr);
+                if punct != Punctuator::None {
+                    println!("punctuator: {punct:?}");
+                    tokens.push(Token::from(punct));
+                    println!("min({}, {})", string.len(), indices.1 + MAX_LEN);
+                    indices = (indices.1, min(string.len(), indices.1 + MAX_LEN));
+                    continue;
+                }
+
+                let op = Operator::from(substr);
+
+                if op != Operator::None {
+                    println!("operator: {op:?}");
+                    tokens.push(Token::from(op));
+                    println!("min({}, {})", string.len(), indices.1 + MAX_LEN);
+                    indices = (indices.1, min(string.len(), indices.1 + MAX_LEN));
+                    continue;
+                }
+
+                indices.1 -= 1;
+            }
+
+            tokens
+        }
+
+        let mut tokens: Vec<Token> = vec![];
 
         let (_, string) = self.read()?;
         let len = string.len();
         let width = len.to_string().len();
 
-        let mut substr_start = 0;
+        let mut substr_start: usize = 0;
         let mut substr = &string[0..0];
 
         let mut index = 0;
@@ -50,7 +101,7 @@ impl<T: Sized + Read> Lexer<T> {
                 index += 1;
 
                 if substr.len() > 0 {
-                    tokens.push(TokenEnum::from(substr));
+                    tokens.push(Token::from(substr));
                 }
 
                 substr_start = index;
@@ -58,7 +109,7 @@ impl<T: Sized + Read> Lexer<T> {
                 continue;
             }
 
-            if TokenEnum::is_ident_char(char) {
+            if Token::is_ident_char(char) {
                 while index < len {
                     println!("ident:  index {index:width$} of {len}: {substr:?}");
 
@@ -67,15 +118,25 @@ impl<T: Sized + Read> Lexer<T> {
                     let char = string[index..index+1].chars().next().unwrap();
                     if char.is_whitespace() {
                         println!("ident:  end   {index:width$} of {len}: {substr:?}");
-                        tokens.push(TokenEnum::from(substr));
+                        let keyword = Keyword::from(substr);
+                        if keyword != Keyword::None {
+                            tokens.push(Token::Keyword(keyword));
+                        } else {
+                            tokens.push(Token::from(substr));
+                        }
                         substr_start = index;
                         substr = &string[substr_start..substr_start];
                         break;
                     }
                     
-                    if !TokenEnum::is_ident_char(char) {
+                    if !Token::is_ident_char(char) {
                         println!("ident:  end   {index:width$} of {len}: {substr:?}");
-                        tokens.push(TokenEnum::from(substr));
+                        let keyword = Keyword::from(substr);
+                        if keyword != Keyword::None {
+                            tokens.push(Token::Keyword(keyword));
+                        } else {
+                            tokens.push(Token::from(substr));
+                        }
                         break;
                     }
 
@@ -90,30 +151,20 @@ impl<T: Sized + Read> Lexer<T> {
             while index < len {
                 println!("symbol: index {index:width$} of {len}: {substr:?}");
 
-                let max_len = max(MAX_PUNCTUATOR_LEN, MAX_OPERATOR_LEN);
                 substr = &string[substr_start..index];
 
                 let char = string[index..index+1].chars().next().unwrap();
                 if char.is_whitespace() {
                     println!("symbol: endw  {index:width$} of {len}: {substr:?}");
-                    tokens.push(TokenEnum::from(substr));
+                    tokens.append(&mut split_symbols(substr));
                     substr_start = index;
                     substr = &string[substr_start..substr_start];
                     break;
                 }
-
-                /* 
-                if substr.len() < max_len {
-                    tokens.push(TokenEnum::from(substr));
-                    substr_start = index;
-                    substr = &string[substr_start..substr_start];
-                    break;
-                }
-                */
                 
-                if TokenEnum::is_ident_char(char) {
+                if Token::is_ident_char(char) {
                     println!("symbol: end   {index:width$} of {len}: {substr:?}");
-                    tokens.push(TokenEnum::from(substr));
+                    tokens.append(&mut split_symbols(substr));
                     substr_start = index;
                     substr = &string[substr_start..substr_start];
                     break;

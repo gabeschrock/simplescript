@@ -1,11 +1,11 @@
-pub struct Token {
-    pub token_enum: TokenEnum,
+pub struct TokenInfo {
+    pub token_enum: Token,
     // pub line: f32,
     // pub col: f32,
 }
 
 #[derive(Debug)]
-pub enum TokenEnum {
+pub enum Token {
     Ident(String),
     Keyword(Keyword),
     Punctuator(Punctuator),
@@ -70,7 +70,7 @@ pub const MAX_KEYWORD_LEN: usize = 8;
 pub const MAX_PUNCTUATOR_LEN: usize = 1;
 pub const MAX_OPERATOR_LEN: usize = 2;
 
-impl TokenEnum {
+impl Token {
     pub fn is_ident_char(c: char) -> bool {
         c.is_alphanumeric() || c == '$' || c == '_'
     }
@@ -81,7 +81,7 @@ impl TokenEnum {
             if is_first && c.is_numeric() {
                 return false;
             }
-            if !TokenEnum::is_ident_char(c) {
+            if !Token::is_ident_char(c) {
                 return false;
             }
             is_first = false;
@@ -90,49 +90,50 @@ impl TokenEnum {
     }
 }
 
-impl From<String> for TokenEnum {
-    fn from(value: String) -> TokenEnum {
-        TokenEnum::Ident(value)
+impl From<String> for Token {
+    fn from(value: String) -> Token {
+        Token::Ident(value)
     }
 }
 
 
-impl From<&str> for TokenEnum {
-    fn from(value: &str) -> TokenEnum {
-        TokenEnum::Ident(String::from(value))
+impl From<&str> for Token {
+    fn from(value: &str) -> Token {
+        Token::Ident(String::from(value))
     }
 }
 
-impl From<Keyword> for TokenEnum {
-    fn from(value: Keyword) -> TokenEnum {
-        TokenEnum::Keyword(value)
+impl From<Keyword> for Token {
+    fn from(value: Keyword) -> Token {
+        Token::Keyword(value)
     }
 }
 
-impl From<Punctuator> for TokenEnum {
-    fn from(value: Punctuator) -> TokenEnum {
-        TokenEnum::Punctuator(value)
+impl From<Punctuator> for Token {
+    fn from(value: Punctuator) -> Token {
+        Token::Punctuator(value)
     }
 }
 
-impl From<Operator> for TokenEnum {
-    fn from(value: Operator) -> TokenEnum {
-        TokenEnum::Operator(value)
+impl From<Operator> for Token {
+    fn from(value: Operator) -> Token {
+        Token::Operator(value)
     }
 }
 
 
-impl From<String> for Keyword {
-    fn from(value: String) -> Keyword {
-        return match value.as_str() {
-            "if"       => Keyword::If,
-            "else"     => Keyword::Else,
-            "for"      => Keyword::For,
-            "while"    => Keyword::While,
-            "break"    => Keyword::Break,
-            "continue" => Keyword::Continue,
-            "function" => Keyword::Function,
-            "return"   => Keyword::Return,
+impl<T: ToString> From<T> for Keyword {
+    fn from(value: T) -> Keyword {
+        use Keyword::*;
+        return match value.to_string().as_str() {
+            "if"       => If,
+            "else"     => Else,
+            "for"      => For,
+            "while"    => While,
+            "break"    => Break,
+            "continue" => Continue,
+            "function" => Function,
+            "return"   => Return,
             _          => Keyword::None,
         }
     }
@@ -140,44 +141,46 @@ impl From<String> for Keyword {
 
 impl<T: ToString> From<T> for Punctuator {
     fn from(value: T) -> Punctuator {
+        use Punctuator::*;
         return match value.to_string().as_str() {
-            "(" => Punctuator::LParen,
-            ")" => Punctuator::RParen,
-            "[" => Punctuator::LBracket,
-            "]" => Punctuator::RBracket,
-            "{" => Punctuator::LBrace,
-            "}" => Punctuator::RBrace,
-            ";" => Punctuator::Semicolon,
-            "," => Punctuator::Comma,
+            "(" => LParen,
+            ")" => RParen,
+            "[" => LBracket,
+            "]" => RBracket,
+            "{" => LBrace,
+            "}" => RBrace,
+            ";" => Semicolon,
+            "," => Comma,
             _ => Punctuator::None,
         }
     }
 }
 
-impl From<String> for Operator {
-    fn from(value: String) -> Operator {
-        return match value.as_str() {
-            "+"  => Operator::Plus,
-            "++" => Operator::DoublePlus,
-            "-"  => Operator::Minus,
-            "--" => Operator::DoubleMinus,
-            "*"  => Operator::Asterisk,
-            "/"  => Operator::Slash,
-            "~"  => Operator::Tilde,
-            "!"  => Operator::Exclamation,
-            "&"  => Operator::Ampersand,
-            "&&" => Operator::DoubleAmp,
-            "|"  => Operator::Pipe,
-            "||" => Operator::DoublePipe,
-            "^"  => Operator::Caret,
-            "^^" => Operator::DoubleCaret,
-            "="  => Operator::Equal,
-            "==" => Operator::DoubleEqual,
-            "+=" => Operator::PlusEqual,
-            "-=" => Operator::MinusEqual,
-            "*=" => Operator::StarEqual,
-            "/=" => Operator::SlashEqual,
-            _    => Operator::None,
+impl<T: ToString> From<T> for Operator {
+    fn from(value: T) -> Operator {
+        use Operator::*;
+        return match value.to_string().as_str() {
+            "+"  => Plus,
+            "++" => DoublePlus,
+            "-"  => Minus,
+            "--" => DoubleMinus,
+            "*"  => Asterisk,
+            "/"  => Slash,
+            "~"  => Tilde,
+            "!"  => Exclamation,
+            "&"  => Ampersand,
+            "&&" => DoubleAmp,
+            "|"  => Pipe,
+            "||" => DoublePipe,
+            "^"  => Caret,
+            "^^" => DoubleCaret,
+            "="  => Equal,
+            "==" => DoubleEqual,
+            "+=" => PlusEqual,
+            "-=" => MinusEqual,
+            "*=" => StarEqual,
+            "/=" => SlashEqual,
+            _    => None,
         }
     }
 }

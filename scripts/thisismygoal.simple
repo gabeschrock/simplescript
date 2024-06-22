@@ -2,23 +2,20 @@
 // (to be able to execute an overly complicated fizzbuzz program)
 // (using my own interpreter)
 
-const fizz = "fizz";
-const buzz = "buzz";
-
-function fizzBuzz(num: number) {
+function fizzBuzz(num) {
     let mod3 = num % 3;
     let mod5 = num % 5;
 
     if (mod3 == 0 && mod5 == 0) {
-        return [fizz, buzz].join("");
+        return "fizzbuzz";
     }
     if (mod3 == 0) {
-        return fizz;
+        return "fizz";
     }
     if (!mod5) {
-        return buzz;
+        return "buzz";
     }
-    return num;
+    return string(num);
 }
 
 for(let i = 1; i <= 50; i++) {
