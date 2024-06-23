@@ -1,0 +1,3 @@
+// no literal parsing, just have to use values in the global scope
+
+print(print);
