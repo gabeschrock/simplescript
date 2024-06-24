@@ -1,10 +1,4 @@
-pub struct TokenInfo {
-    pub token_enum: Token,
-    // pub line: f32,
-    // pub col: f32,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Token {
     Ident(String),
     Keyword(Keyword),
@@ -14,7 +8,7 @@ pub enum Token {
     NumLiteral(f64),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Keyword {
     None,
     If,
@@ -27,7 +21,7 @@ pub enum Keyword {
     Return,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Punctuator {
     None,
     LParen,
@@ -41,7 +35,7 @@ pub enum Punctuator {
     EOF,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
     None,
     Plus,
